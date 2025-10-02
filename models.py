@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
+ROLE_CHOICES = ("admin", "user")
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -10,6 +11,7 @@ class User(db.Model):
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(10), nullable=False, default="user", server_default="user", index=True) # "admin" o "user"
     created_at = db.Column(db.DateTime, default=datetime.now, nullable=False)
 
     def set_password(self, raw_password: str):
@@ -23,8 +25,9 @@ class User(db.Model):
             'id': self.id,
             'username': self.username,
             'email': self.email,
+            'role': self.role,
             "created_at": self.created_at.isoformat() if hasattr(self, 'created_at') else None
         }
 
     def __repr__(self):
-        return f"User('{self.username}', '{self.email}')"
+        return f"User('{self.username}', '{self.email}'), role='{self.role}')"

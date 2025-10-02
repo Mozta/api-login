@@ -25,23 +25,27 @@ A Flask-based REST API that provides user authentication functionality using JWT
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd api-login
 ```
 
 2. Create a virtual environment:
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 3. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 4. Create a `.env` file in the root directory:
+
 ```env
 DATABASE_URL=sqlite:///site.db
 JWT_SECRET_KEY=your-super-secret-key-here
@@ -50,6 +54,7 @@ REFRESH_TOKEN_EXPIRES_DAYS=7
 ```
 
 5. Run the application:
+
 ```bash
 python app.py
 ```
@@ -58,18 +63,19 @@ The API will be available at `http://localhost:5000`
 
 ## Environment Variables
 
-| Variable | Description | Default Value |
-|----------|-------------|---------------|
-| `DATABASE_URL` | Database connection string | `sqlite:///site.db` |
-| `JWT_SECRET_KEY` | Secret key for JWT token signing | `super-secret` |
-| `ACCESS_TOKEN_EXPIRES` | Access token expiration time in minutes | `15` |
-| `REFRESH_TOKEN_EXPIRES_DAYS` | Refresh token expiration time in days | `7` |
+| Variable                     | Description                             | Default Value       |
+| ---------------------------- | --------------------------------------- | ------------------- |
+| `DATABASE_URL`               | Database connection string              | `sqlite:///site.db` |
+| `JWT_SECRET_KEY`             | Secret key for JWT token signing        | `super-secret`      |
+| `ACCESS_TOKEN_EXPIRES`       | Access token expiration time in minutes | `15`                |
+| `REFRESH_TOKEN_EXPIRES_DAYS` | Refresh token expiration time in days   | `7`                 |
 
 ## API Endpoints
 
 ### Authentication Endpoints
 
 #### Register User
+
 ```http
 POST /auth/register
 Content-Type: application/json
@@ -82,21 +88,23 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
-    "message": "Usuario registrado exitosamente.",
-    "user": {
-        "id": 1,
-        "username": "johndoe",
-        "email": "john@example.com",
-        "created_at": "2025-10-02T10:30:00"
-    },
-    "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-    "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+  "message": "Usuario registrado exitosamente.",
+  "user": {
+    "id": 1,
+    "username": "johndoe",
+    "email": "john@example.com",
+    "created_at": "2025-10-02T10:30:00"
+  },
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
 }
 ```
 
 #### Login User
+
 ```http
 POST /auth/login
 Content-Type: application/json
@@ -108,44 +116,49 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-    "message": "Login exitoso.",
-    "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-    "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+  "message": "Login exitoso.",
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
 }
 ```
 
 #### Refresh Token
+
 ```http
 POST /auth/refresh
 Authorization: Bearer <refresh_token>
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-    "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
 }
 ```
 
 ### Protected Endpoints
 
 #### Get User Profile
+
 ```http
 GET /profile
 Authorization: Bearer <access_token>
 ```
 
 **Response (200 OK):**
+
 ```json
 {
-    "user": {
-        "id": 1,
-        "username": "johndoe",
-        "email": "john@example.com",
-        "created_at": "2025-10-02T10:30:00"
-    }
+  "user": {
+    "id": 1,
+    "username": "johndoe",
+    "email": "john@example.com",
+    "created_at": "2025-10-02T10:30:00"
+  }
 }
 ```
 
@@ -155,7 +168,7 @@ The API returns consistent error responses in the following format:
 
 ```json
 {
-    "error": "Error message description"
+  "error": "Error message description"
 }
 ```
 
@@ -169,11 +182,13 @@ The API returns consistent error responses in the following format:
 ## Validation Rules
 
 ### User Registration
+
 - **Username**: Required, must be unique
 - **Email**: Required, must be valid email format, must be unique
 - **Password**: Required, minimum 6 characters
 
 ### Email Validation
+
 - Emails are normalized (lowercased, trimmed)
 - Email format validation using the `email-validator` library
 - Deliverability checking is disabled for performance
@@ -190,6 +205,7 @@ The API returns consistent error responses in the following format:
 ## Database Schema
 
 ### Users Table
+
 ```sql
 CREATE TABLE users (
     id INTEGER PRIMARY KEY,
@@ -203,6 +219,7 @@ CREATE TABLE users (
 ## Development
 
 ### Project Structure
+
 ```
 api-login/
 ├── app.py              # Main Flask application
@@ -215,23 +232,28 @@ api-login/
 ```
 
 ### Running in Development Mode
+
 The application runs in debug mode by default when started with `python app.py`. This enables:
+
 - Automatic reloading on code changes
 - Detailed error messages
 - Debug toolbar (if configured)
 
 ### Database Management
+
 The database is automatically created when the application starts. To reset the database, simply delete the `instance/site.db` file and restart the application.
 
 ## Production Considerations
 
 1. **Security**:
+
    - Change the `JWT_SECRET_KEY` to a strong, randomly generated secret
    - Use a production database (PostgreSQL, MySQL)
    - Enable HTTPS
    - Configure proper CORS settings
 
 2. **Performance**:
+
    - Use a production WSGI server (Gunicorn, uWSGI)
    - Configure database connection pooling
    - Implement rate limiting
