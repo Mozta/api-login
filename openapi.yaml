@@ -1,0 +1,400 @@
+openapi: 3.0.3
+info:
+  title: API Login - Sistema de Autenticación con Roles
+  description: |
+    API REST para autenticación de usuarios con sistema de roles basado en JWT.
+
+    ## Características principales:
+    - Registro e inicio de sesión de usuarios
+    - Sistema de roles (admin, user)
+    - Autenticación JWT con tokens de acceso y refresh
+    - Endpoints protegidos por roles
+    - Validación de email y contraseñas seguras
+
+    ## Roles disponibles:
+    - **user**: Usuario estándar con acceso básico
+    - **admin**: Administrador con acceso completo
+
+    ## Autenticación:
+    Los endpoints protegidos requieren un token JWT en el header Authorization:
+    ```
+    Authorization: Bearer <access_token>
+    ```
+  version: 1.0.0
+  contact:
+    name: Rafael Pérez Aguirre
+    email: admin@tuempresa.com
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Servidor de desarrollo local
+  - url: https://api.tuempresa.com
+    description: Servidor de producción
+
+paths:
+  /health:
+    get:
+      summary: Verificar estado del servidor
+      description: Endpoint público para verificar que el servidor está funcionando correctamente
+      tags:
+        - Sistema
+      responses:
+        "200":
+          description: Servidor funcionando correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  time:
+                    type: string
+                    format: date-time
+                    example: "2025-10-07T10:30:00.123456"
+
+  /auth/register:
+    post:
+      summary: Registrar nuevo usuario
+      description: |
+        Crea una nueva cuenta de usuario. El rol por defecto es 'user', 
+        pero se puede especificar 'admin' en el campo role.
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+              properties:
+                username:
+                  type: string
+                  minLength: 1
+                  maxLength: 20
+                  example: "johndoe"
+                  description: Nombre de usuario único
+                email:
+                  type: string
+                  format: email
+                  example: "john@example.com"
+                  description: Dirección de email válida y única
+                password:
+                  type: string
+                  minLength: 6
+                  example: "securepassword123"
+                  description: Contraseña de al menos 6 caracteres
+                role:
+                  type: string
+                  enum: [user, admin]
+                  default: user
+                  example: "user"
+                  description: Rol del usuario (opcional, por defecto 'user')
+      responses:
+        "201":
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Datos inválidos o faltantes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missing_fields:
+                  summary: Campos faltantes
+                  value:
+                    error: "Campos faltantes: email, password"
+                invalid_email:
+                  summary: Email inválido
+                  value:
+                    error: "Email inválido: Invalid email format"
+                short_password:
+                  summary: Contraseña muy corta
+                  value:
+                    error: "La contraseña debe tener al menos 6 caracteres."
+                email_exists:
+                  summary: Email ya registrado
+                  value:
+                    error: "El email ya está registrado."
+
+  /auth/login:
+    post:
+      summary: Iniciar sesión
+      description: Autentica un usuario existente y devuelve tokens JWT
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "john@example.com"
+                password:
+                  type: string
+                  example: "securepassword123"
+      responses:
+        "200":
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Login exitoso."
+                  access_token:
+                    type: string
+                    example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+                  refresh_token:
+                    type: string
+                    example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Credenciales inválidas."
+
+  /auth/refresh:
+    post:
+      summary: Renovar token de acceso
+      description: |
+        Genera un nuevo access token usando un refresh token válido.
+        Actualiza el rol del usuario desde la base de datos.
+      tags:
+        - Autenticación
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          description: "Bearer <refresh_token>"
+          schema:
+            type: string
+            example: "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+      responses:
+        "200":
+          description: Token renovado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+        "401":
+          description: Token inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /profile:
+    get:
+      summary: Obtener perfil del usuario
+      description: Devuelve la información del perfil del usuario autenticado
+      tags:
+        - Usuario
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Perfil del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: Token inválido o faltante
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/stats:
+    get:
+      summary: Estadísticas de administración
+      description: |
+        Obtiene estadísticas del sistema. Solo accesible para usuarios con rol 'admin'.
+      tags:
+        - Administración
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Estadísticas del sistema
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users_total:
+                    type: integer
+                    example: 150
+                    description: Total de usuarios registrados
+                  users_by_role:
+                    type: object
+                    properties:
+                      admin:
+                        type: integer
+                        example: 5
+                        description: Número de administradores
+                      user:
+                        type: integer
+                        example: 145
+                        description: Número de usuarios regulares
+        "401":
+          description: Token inválido o faltante
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Rol insuficiente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Forbidden"
+                  detail:
+                    type: string
+                    example: "Rol insuficiente para acceder a este recurso."
+                  required_roles:
+                    type: array
+                    items:
+                      type: string
+                    example: ["admin"]
+                  current_role:
+                    type: string
+                    example: "user"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT obtenido al hacer login o registro.
+
+        Ejemplo: `Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...`
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+          description: ID único del usuario
+        username:
+          type: string
+          example: "johndoe"
+          description: Nombre de usuario
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+          description: Dirección de email
+        role:
+          type: string
+          enum: [user, admin]
+          example: "user"
+          description: Rol del usuario
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-10-07T10:30:00.123456"
+          description: Fecha y hora de creación de la cuenta
+
+    AuthResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Usuario registrado exitosamente."
+        user:
+          $ref: "#/components/schemas/User"
+        access_token:
+          type: string
+          example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+          description: Token de acceso JWT (válido por 15 minutos)
+        refresh_token:
+          type: string
+          example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+          description: Token de renovación JWT (válido por 7 días)
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Campos faltantes: email, password"
+          description: Descripción del error
+        detail:
+          type: string
+          example: "Información adicional sobre el error"
+          description: Detalles adicionales del error (opcional)
+
+tags:
+  - name: Sistema
+    description: Endpoints del sistema y salud
+  - name: Autenticación
+    description: Registro, login y gestión de tokens
+  - name: Usuario
+    description: Operaciones del perfil del usuario
+  - name: Administración
+    description: Funciones exclusivas para administradores
+
+externalDocs:
+  description: Repositorio del proyecto en GitHub
+  url: https://github.com/Mozta/api-login
