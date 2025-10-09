@@ -83,6 +83,9 @@ def role_required(*roles):
         return decorated
     return wrapper
 
+@app.route('/')
+def index():
+    return jsonify({"message": "API de autenticación con Flask, JWT y PostgreSQL"}), 200
 # --------------------------
 # Rutas de autenticación
 # --------------------------
